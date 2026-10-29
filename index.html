@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15-Maktab Davomati</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: var(--tg-theme-bg-color, #f3f2f8);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+            --primary: var(--tg-theme-button-color, #007aff);
+            --primary-text: var(--tg-theme-button-text-color, #ffffff);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 8px;
+            display: block;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+            appearance: none;
+        }
+        .students-list {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+        }
+        .student-item:last-child {
+            border-bottom: none;
+        }
+        /* Chiroyli Galochka (Checkbox) */
+        input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            accent-color: #ff3b30; /* Kelmaganlarni qizil belgilash uchun */
+            cursor: pointer;
+        }
+        button {
+            width: 100%;
+            padding: 16px;
+            margin-top: 20px;
+            background-color: var(--primary);
+            color: var(--primary-text);
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            cursor: pointer;
+            display: none;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <h2><i class="fas fa-school"></i> 15-Maktab Davomati</h2>
+
+    <div class="form-group">
+        <label>Fanni tanlang:</label>
+        <select id="subject" onchange="loadTeachers()">
+            <option value="">-- Tanlang --</option>
+            <option value="Matematika">Matematika</option>
+            <option value="Informatika">Informatika (IT va AI)</option>
+            <option value="Ona_tili">Ona tili va Adabiyot</option>
+        </select>
+    </div>
+
+    <div class="form-group" id="teacher-group" style="display: none;">
+        <label>O'qituvchini tanlang:</label>
+        <select id="teacher" onchange="loadStudents()">
+            <option value="">-- Tanlang --</option>
+        </select>
+    </div>
+
+    <div class="students-list" id="students-container">
+        <label>Kelmagan o'quvchilarga "ptichka" qo'ying:</label>
+        <div id="students-list-items"></div>
+    </div>
+
+    <button id="submit-btn" onclick="sendData()">Tastiqlash va Yuborish <i class="fas fa-paper-plane"></i></button>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Ma'lumotlar bazasi (Buni Python bazangizdan dinamik olishingiz ham mumkin)
+        const schoolData = {
+            "Matematika": {
+                "Aliyev Vali (11-A)": ["Toshmatov A.", "Eshmatov B.", "Karimova S."],
+                "Sobirov G'ani (10-B)": ["Azizov D.", "Umarov F."]
+            },
+            "Informatika": {
+                "Rasul Bazarbayev (11-sinf)": ["Olimov Q.", "Rustamov W.", "Nodirova E."],
+                "G'aniyev D. (9-A)": ["Qodirov Z.", "Sobirova X."]
+            },
+            "Ona_tili": {
+                "Nigmatova M. (11-A)": ["Toshmatov A.", "Eshmatov B.", "Karimova S."]
+            }
+        };
+
+        function loadTeachers() {
+            const subject = document.getElementById("subject").value;
+            const teacherSelect = document.getElementById("teacher");
+            const teacherGroup = document.getElementById("teacher-group");
+
+            teacherSelect.innerHTML = '<option value="">-- Tanlang --</option>';
+            document.getElementById("students-container").style.display = "none";
+            document.getElementById("submit-btn").style.display = "none";
+
+            if (subject && schoolData[subject]) {
+                const teachers = Object.keys(schoolData[subject]);
+                teachers.forEach(teacher => {
+                    let option = document.createElement("option");
+                    option.value = teacher;
+                    option.text = teacher;
+                    teacherSelect.appendChild(option);
+                });
+                teacherGroup.style.display = "block";
+            } else {
+                teacherGroup.style.display = "none";
+            }
+        }
+
+        function loadStudents() {
+            const subject = document.getElementById("subject").value;
+            const teacher = document.getElementById("teacher").value;
+            const studentsContainer = document.getElementById("students-container");
+            const studentsListItems = document.getElementById("students-list-items");
+            const submitBtn = document.getElementById("submit-btn");
+
+            studentsListItems.innerHTML = "";
+
+            if (subject && teacher && schoolData[subject][teacher]) {
+                const students = schoolData[subject][teacher];
+                students.forEach(student => {
+                    let div = document.createElement("div");
+                    div.className = "student-item";
+                    div.innerHTML = `<span>${student}</span> <input type="checkbox" value="${student}">`;
+                    studentsListItems.appendChild(div);
+                });
+                studentsContainer.style.display = "block";
+                submitBtn.style.display = "block";
+            } else {
+                studentsContainer.style.display = "none";
+                submitBtn.style.display = "none";
+            }
+        }
+
+        function sendData() {
+            const subject = document.getElementById("subject").value;
+            const teacher = document.getElementById("teacher").value;
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+
+            let absentees = [];
+            checkboxes.forEach((box) => absentees.push(box.value));
+
+            // Agar hamma kelgan bo'lsa
+            if (absentees.length === 0) {
+                absentees = ["Hamma qatnashmoqda"];
+            }
+
+            const report = {
+                fan: subject,
+                oqituvchi: teacher,
+                kelmaganlar: absentees
+            };
+
+            // Pythonga JSON formatda yuborish
+            tg.sendData(JSON.stringify(report));
+        }
+    </script>
+</body>
+</html>
